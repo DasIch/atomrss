@@ -1,0 +1,15 @@
+nytimes.com	http://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml
+washingtonpost.com	http://feeds.washingtonpost.com/rss/politics
+politico.com	http://www.politico.com/rss/politicopicks.xml
+github.com	https://github.com/django/django/commits/master.atom
+news.ycombinator.com	https://news.ycombinator.com/rss
+daringfireball.net	http://daringfireball.net/feeds/main
+tumblr.net	http://swiftonsecurity.tumblr.com/rss
+blogspot.com (RSS)	http://python-history.blogspot.com/feeds/posts/default?alt=rss
+blogspot.com (Atom)	http://python-history.blogspot.com/feeds/posts/default
+fivethirtyeight.com	http://fivethirtyeight.com/all/feed
+vox.com	http://www.vox.com/rss/index.xml
+blog.cryptographyengineering.com	https://blog.cryptographyengineering.com/feed/
+xkcd.com (RSS)	https://xkcd.com/rss.xml
+xkcd.com (Atom)	https://xkcd.com/atom.xml
+atp.fm (Podcast)	http://atp.fm/episodes?format=rss
