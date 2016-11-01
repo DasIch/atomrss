@@ -87,11 +87,7 @@ class Person:
 
 
 class RSSParserError(ParserError):
-    def __init__(self, message, lineno=None):
-        if lineno is not None:
-            message = '{} (line: {})'.format(message, lineno)
-        super().__init__(message)
-        self.lineno = lineno
+    pass
 
 
 class MissingElement(RSSParserError):
