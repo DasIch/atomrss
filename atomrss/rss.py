@@ -55,8 +55,10 @@ class Channel:
 
 
 class Item:
-    def __init__(self, title=None, link=None, description=None, author=None,
-                 pub_date=None):
+    def __init__(self, title=None, link=None, description=None,
+                 author=None,
+                 pub_date=None,
+                 enclosure=None):
         #: An optional title for this item. Either the title or the
         #: :attr:`description` is always present.
         self.title = title
@@ -76,6 +78,10 @@ class Item:
         #: An optional publication date for the item.
         self.pub_date = pub_date
 
+        #: An optional :class:`Enclosure` instance. This is used to enclose
+        #: files such as mp3s in case of podcasts.
+        self.enclosure = enclosure
+
 
 class Person:
     def __init__(self, name, email):
@@ -84,6 +90,18 @@ class Person:
 
         #: An email address associated with the person.
         self.email = email
+
+
+class Enclosure:
+    def __init__(self, url, length, type):
+        #: The URL of the enclosed file.
+        self.url = url
+
+        #: The length of the enclosed file in bytes.
+        self.length = length
+
+        #: The MIME type of the enclosed file.
+        self.type = type
 
 
 class RSSParserError(ParserError):
@@ -198,10 +216,12 @@ class _Parser:
         #       * guid
         #       * source
 
-        author = self.parse_item_author(element)
-        pub_date = self.parse_item_pub_date(element)
-
-        return Item(title, link, description, author=author, pub_date=pub_date)
+        return Item(
+            title, link, description,
+            author=self.parse_item_author(element),
+            pub_date=self.parse_item_pub_date(element),
+            enclosure=self.parse_item_enclosure(element)
+        )
 
     def parse_item_author(self, item):
         email_address = self._get_element_text(item, 'author', default=None)
@@ -224,6 +244,38 @@ class _Parser:
                 lineno=pub_date.sourceline
             )
             return
+
+    def parse_item_enclosure(self, item):
+        element = item.find('enclosure')
+        if element is None:
+            return
+
+        try:
+            url = element.attrib['url']
+            raw_length = element.attrib['length']
+            type = element.attrib['type']
+        except KeyError as error:
+            self.logger.error(
+                'invalid-enclosure',
+                cause='missing-attribute',
+                attribute=error.args[0],
+                lineno=element.sourceline
+            )
+            return
+
+        try:
+            length = int(raw_length)
+            if length < 0:
+                raise ValueError('invalid length')
+        except ValueError as error:
+            self.logger.error(
+                'invalid-enclosure',
+                cause='invalid-length',
+                length=raw_length,
+                lineno=element.sourceline
+            )
+
+        return Enclosure(url, length, type)
 
     def _get_element_text(self, tree, name, **kwargs):
         missing = object()
