@@ -40,7 +40,8 @@ class RSS:
 
 
 class Channel:
-    def __init__(self, title, link, description, items):
+    def __init__(self, title, link, description, items,
+                 last_build_date=None):
         #: The title of the channel.
         self.title = title
 
@@ -49,6 +50,9 @@ class Channel:
 
         #: A description of the channel.
         self.description = description
+
+        #: An optional time of when the content changed last.
+        self.last_build_date = last_build_date
 
         #: A list of :class:`Item` instances.
         self.items = items
@@ -176,7 +180,6 @@ class _Parser:
         #       * copyright
         #       * managingEditor
         #       * webMaster
-        #       * lastBuildDate
         #       * category
         #       * generator
         #       * docs
@@ -194,7 +197,24 @@ class _Parser:
             if item is not None
         ]
 
-        return Channel(title, link, description, items)
+        return Channel(
+            title, link, description, items,
+            last_build_date=self.parse_channel_last_build_date(element)
+        )
+
+    def parse_channel_last_build_date(self, tree):
+        element = tree.find('lastBuildDate')
+        if element is None:
+            return
+
+        try:
+            return dateutil.parser.parse(element.text)
+        except (ValueError, OverflowError):
+            self.logger.error(
+                'invalid-last-build-date',
+                date=element.text,
+                lineno=element.sourceline
+            )
 
     def parse_item(self, element):
         title = self._get_element_text(element, 'title', default=None)
