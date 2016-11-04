@@ -63,13 +63,35 @@ class Entry:
         self.content = content
 
 
+class Link:
+    def __init__(self, href, rel='alternate', type=None, hreflang=None,
+                 title=None, length=None):
+        #: An IRI reference.
+        self.href = href
+
+        #: A relation type indicating how the linked resource relates to the
+        #: feed or entry containing the link.
+        self.rel = rel
+
+        #: A hint indicating the media type of the linked resource.
+        self.type = type
+
+        #: An optional indication of linked contents language. In combination
+        #: `rel='alternate'` indicates a translation.
+        self.hreflang = hreflang
+
+        #: Optional human-readable information about the link.
+        self.title = title
+
+        #: An optional indication of the linked content's length in bytes.
+        self.length = length
+
+
+
 Text = namedtuple('Text', ['type', 'value'])
 
 
 Person = namedtuple('Person', ['name', 'uri', 'email'])
-
-
-Link = namedtuple('Link', ['href', 'rel'])
 
 
 Content = namedtuple('Content', ['type', 'src', 'value'])
@@ -268,8 +290,15 @@ class _Parser:
                 lineno=element.sourceline
             )
             return
-        rel = element.attrib.get('rel', 'alternate')
-        return Link(href, rel)
+
+        return Link(
+            href,
+            rel=element.attrib.get('rel', 'alternate'),
+            type=element.attrib.get('type'),
+            hreflang=element.attrib.get('hreflang'),
+            title=element.attrib.get('title'),
+            length=element.attrib.get('length')
+        )
 
     def parse_content(self, tree):
         name = self.create_name('content')
