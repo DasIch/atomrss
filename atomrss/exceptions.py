@@ -7,7 +7,13 @@
 """
 
 
-class ParserError(Exception):
+class AtomRSSError(Exception):
+    """
+    Represents an error raised by this library.
+    """
+
+
+class ParserError(AtomRSSError):
     """
     Represents an error that occurred while parsing a feed.
     """
