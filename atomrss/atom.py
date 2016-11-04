@@ -86,6 +86,23 @@ class Link:
         #: An optional indication of the linked content's length in bytes.
         self.length = length
 
+    def __eq__(self, other):
+        if isinstance(other, Link):
+            return (
+                self.href == other.href and
+                self.rel == other.rel and
+                self.type == other.type and
+                self.hreflang == other.hreflang and
+                self.title == other.title and
+                self.length == other.length
+            )
+        return NotImplemented
+
+    def __repr__(self):
+        return '{}({!r}, rel={!r}, type={!r}, hreflang={!r}, title={!r}, length={!r})'.format(
+            self.__class__.__qualname__,
+            self.href, self.rel, self.type, self.hreflang, self.title, self.length
+        )
 
 
 Text = namedtuple('Text', ['type', 'value'])
