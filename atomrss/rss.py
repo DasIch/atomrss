@@ -232,7 +232,6 @@ class _Parser:
         # TODO: Add support for:
         #       * category
         #       * comments
-        #       * enclosure
         #       * guid
         #       * source
 
