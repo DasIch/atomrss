@@ -146,14 +146,6 @@ class _Parser:
                 lineno=element.sourceline
             )
 
-        # TODO: add element support:
-        #       * atomCategory*
-        #       * atomGenerator?
-        #       * atomIcon?
-        #       * atomLogo?
-        #       * atomRights?
-        #       * extensionElement*
-
         id = self.parse_id(element)
         title = self.parse_title(element)
         updated = self.parse_updated(element)
@@ -186,12 +178,6 @@ class _Parser:
             kwargs['event'] = 'invalid-entry'
             self.logger.error(**kwargs)
             return
-
-        # TODO: add element support:
-        #       * atomCategory*
-        #       * atomRights?
-        #       * atomSource?
-        #       * extensionElement*
 
         return Entry(
             id, title, updated,

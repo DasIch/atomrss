@@ -175,22 +175,6 @@ class _Parser:
         link = self._get_element_text(element, 'link')
         description = self._get_element_text(element, 'description')
 
-        # TODO: Add support for:
-        #       * language
-        #       * copyright
-        #       * managingEditor
-        #       * webMaster
-        #       * category
-        #       * generator
-        #       * docs
-        #       * cloud
-        #       * ttl
-        #       * image
-        #       * rating
-        #       * textInput
-        #       * skipHours
-        #       * skipDays
-
         items = [
             item
             for item in map(self.parse_item, element.findall('item'))
@@ -228,12 +212,6 @@ class _Parser:
                 lineno=element.sourceline
             )
             return
-
-        # TODO: Add support for:
-        #       * category
-        #       * comments
-        #       * guid
-        #       * source
 
         return Item(
             title, link, description,
