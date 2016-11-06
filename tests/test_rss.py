@@ -131,6 +131,23 @@ class ItemAttributeTestCase:
 
 
 class TestItemAttributeTitle(ItemAttributeTestCase):
+    def test_missing(self, element, tree):
+        element.remove(element.find('title'))
+        assert element.find('description') is None
+
+        feed = atomrss.rss.parse_tree(tree)
+        assert feed.channel.items == []
+
+    def test_replaced_by_description(self, element, tree):
+        element.remove(element.find('title'))
+        element.append(
+            E('description', 'Item description')
+        )
+
+        item = self.parse(tree)
+        assert item.title is None
+        assert item.description == 'Item description'
+
     def test(self, item_title, tree):
         item = self.parse(tree)
         assert item.title == item_title
@@ -143,7 +160,10 @@ class TestItemAttributeLink(ItemAttributeTestCase):
 
 
 class TestItemAttributeDescription(ItemAttributeTestCase):
-    def test_missing(self, tree):
+    # test_missing is handled in TestItemAttributeTitle
+
+    def test_replaced_by_title(self, element, tree):
+        assert element.find('title') is not None
         item = self.parse(tree)
         assert item.description is None
 
