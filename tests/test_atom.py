@@ -123,6 +123,18 @@ class TestFeedAttributeTitle(FeedRequiredAttributeTestCase):
         assert feed.title.type == 'text'
         assert feed.title.value == feed_title
 
+    def test_html(self, element, tree):
+        name = lxml.etree.QName(atomrss.atom.ATOM_NAMESPACE, 'title')
+        element.remove(element.find(name))
+
+        element.append(
+            ATOME('title', 'Less: &lt;em> &amp;lt; &lt;/em>', type='html')
+        )
+
+        feed = atomrss.atom.parse_tree(tree)
+        assert feed.title.type == 'html'
+        assert feed.title.value == 'Less: <em> &lt; </em>'
+
 
 class TestFeedAttributeUpdated(FeedRequiredAttributeTestCase):
     element_name = 'updated'
@@ -157,6 +169,15 @@ class TestFeedAttributeSubtitle(FeedAttributeTestCase):
         feed = atomrss.atom.parse_tree(tree)
         assert feed.subtitle.type == 'text'
         assert feed.subtitle.value == 'Atom Test Feed Subtitle'
+
+    def test_html(self, element, tree):
+        element.append(
+            ATOME('subtitle', 'Less: &lt;em> &amp;lt; &lt;/em>', type='html')
+        )
+
+        feed = atomrss.atom.parse_tree(tree)
+        assert feed.subtitle.type == 'html'
+        assert feed.subtitle.value == 'Less: <em> &lt; </em>'
 
 
 class TestFeedAttributeLinks(FeedAttributeTestCase):
@@ -254,10 +275,21 @@ class TestEntryAttributeID(EntryRequiredAttributeTestCase):
 class TestEntryAttributeTitle(EntryRequiredAttributeTestCase):
     element_name = 'title'
 
-    def test(self, entry_title, tree):
+    def test_text(self, entry_title, tree):
         entry = self.parse(tree)
         assert entry.title.type == 'text'
         assert entry.title.value == entry_title
+
+    def test_html(self, element, tree):
+        name = lxml.etree.QName(atomrss.atom.ATOM_NAMESPACE, 'title')
+        element.remove(element.find(name))
+        element.append(
+            ATOME('title', '&lt;&gt;', type='html')
+        )
+
+        entry = self.parse(tree)
+        assert entry.title.type == 'html'
+        assert entry.title.value == '<>'
 
 
 class TestEntryAttributeUpdated(EntryRequiredAttributeTestCase):
@@ -352,6 +384,15 @@ class TestEntryAttributeSummary(EntryAttributeTestCase):
         assert entry.summary.type == 'text'
         assert entry.summary.value == 'A summary of the entry.'
 
+    def test_html(self, element, tree):
+        element.append(
+            ATOME('summary', 'This is &lt;em>AWESOME&lt;/em>!', type='html')
+        )
+
+        entry = self.parse(tree)
+        assert entry.summary.type == 'html'
+        assert entry.summary.value == 'This is <em>AWESOME</em>!'
+
 
 class TestEntryAttributeLinks(EntryAttributeTestCase):
     def test_missing(self, tree):
@@ -382,3 +423,15 @@ class TestEntryAttributeContent(EntryAttributeTestCase):
         entry = self.parse(tree)
         assert entry.content.type == 'text'
         assert entry.content.value == 'The content of the entry.'
+
+    def test_html(self, element, tree):
+        element.append(
+            ATOME(
+                'content', 'This is &lt;strong>the content&lt;/strong>!',
+                type='html'
+            )
+        )
+
+        entry = self.parse(tree)
+        assert entry.content.type == 'html'
+        assert entry.content.value == 'This is <strong>the content</strong>!'

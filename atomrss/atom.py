@@ -5,6 +5,7 @@
     :copyright: 2016 by Daniel Neuhäuser
     :license: BSD, see LICENSE.rst for details
 """
+import html
 import logging
 from collections import namedtuple
 
@@ -340,6 +341,8 @@ class _Parser:
         if type == 'xhtml':
             divname = lxml.etree.QName(XHTML_NAMESPACE, 'div').text
             value = lxml.etree.tostring(element.find(divname))
+        elif type == 'html':
+            value = html.unescape(element.text)
         else:
             value = element.text
         return Text(type, value)
