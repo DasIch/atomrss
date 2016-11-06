@@ -165,7 +165,7 @@ class _Parser:
         self.namespace = ATOM_NAMESPACE
 
     def create_name(self, name):
-        return lxml.etree.QName(self.namespace, name).text
+        return lxml.etree.QName(self.namespace, name)
 
     def parse(self):
         # Figure out the namespace in the case used in the XML file.
@@ -236,14 +236,20 @@ class _Parser:
         name = self.create_name('title')
         element = tree.find(name)
         if element is None:
-            raise MissingElement('<{}>'.format(name), lineno=tree.sourceline)
+            raise MissingElement(
+                '<atom:{}>'.format(name.localname),
+                lineno=tree.sourceline
+            )
         return self.parse_text_construct(element)
 
     def parse_updated(self, tree):
         name = self.create_name('updated')
         element = tree.find(name)
         if element is None:
-            raise MissingElement('<{}>'.format(name), lineno=tree.sourceline)
+            raise MissingElement(
+                '<atom:{}>'.format(name.localname),
+                lineno=tree.sourceline
+            )
 
         try:
             return dateutil.parser.parse(element.text)
@@ -357,7 +363,10 @@ class _Parser:
             raise InvalidDate(element.text, lineno=element.sourceline)
 
     def _get_element_text(self, tree, name):
-        element = tree.find(name)
+        element = tree.find(name.text)
         if element is None:
-            raise MissingElement('<{}>'.format(name), lineno=tree.sourceline)
+            raise MissingElement(
+                '<atom:{}>'.format(name.localname),
+                lineno=tree.sourceline
+            )
         return element.text

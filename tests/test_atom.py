@@ -94,20 +94,39 @@ class FeedAttributeTestCase:
         return tree.getroot()
 
 
-class TestFeedAttributeID(FeedAttributeTestCase):
+class FeedRequiredAttributeTestCase(FeedAttributeTestCase):
+    element_name = None
+
+    def test_missing(self, element, tree):
+        name = lxml.etree.QName(atomrss.atom.ATOM_NAMESPACE, self.element_name)
+        element.remove(element.find(name))
+
+        with pytest.raises(atomrss.atom.MissingElement) as exc:
+            atomrss.atom.parse_tree(tree)
+
+        exc.match('<atom:{}>'.format(self.element_name))
+
+
+class TestFeedAttributeID(FeedRequiredAttributeTestCase):
+    element_name = 'id'
+
     def test(self, feed_id, tree):
         feed = atomrss.atom.parse_tree(tree)
         assert feed.id == feed_id
 
 
-class TestFeedAttributeTitle(FeedAttributeTestCase):
+class TestFeedAttributeTitle(FeedRequiredAttributeTestCase):
+    element_name = 'title'
+
     def test_text(self, feed_title, tree):
         feed = atomrss.atom.parse_tree(tree)
         assert feed.title.type == 'text'
         assert feed.title.value == feed_title
 
 
-class TestFeedAttributeUpdated(FeedAttributeTestCase):
+class TestFeedAttributeUpdated(FeedRequiredAttributeTestCase):
+    element_name = 'updated'
+
     def test(self, feed_updated, tree):
         feed = atomrss.atom.parse_tree(tree)
         assert feed.updated.isoformat() == feed_updated
