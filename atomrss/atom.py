@@ -123,6 +123,15 @@ class AtomParserError(ParserError):
         }
 
 
+class NotImplementedError(AtomParserError):
+    def to_log_kwargs(self):
+        return {
+            'event': 'not-implemented-error',
+            'feature': self.args[0],
+            'lineno': self.lineno
+        }
+
+
 class MissingElement(AtomParserError):
     def to_log_kwargs(self):
         return {
@@ -288,7 +297,11 @@ class _Parser:
         element = tree.find(name)
         if element is None:
             return
-        return self.parse_text_construct(element)
+        try:
+            return self.parse_text_construct(element)
+        except NotImplementedError as err:
+            self.logger.error(*err.to_log_kwargs())
+            return
 
     def parse_subtitle(self, tree):
         name = self.create_name('subtitle')
@@ -333,14 +346,20 @@ class _Parser:
         src = element.attrib.get('src')
         type = element.attrib.get('type', 'text')
         if type in {'text', 'html', 'xhtml'}:
-            value = self.parse_text_construct(element).value
+            try:
+                value = self.parse_text_construct(element).value
+            except AtomParserError as err:
+                self.logger.error(*err.to_log_kwargs())
+                return
         return Content(type, src, value)
 
     def parse_text_construct(self, element):
         type = element.attrib.get('type', 'text')
         if type == 'xhtml':
-            divname = lxml.etree.QName(XHTML_NAMESPACE, 'div').text
-            value = lxml.etree.tostring(element.find(divname))
+            raise NotImplementedError(
+                'xhtml text construct',
+                lineno=element.sourceline
+            )
         elif type == 'html':
             value = html.unescape(element.text)
         else:

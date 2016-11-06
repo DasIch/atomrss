@@ -16,6 +16,7 @@ import atomrss.atom
 
 
 ATOME = lxml.builder.ElementMaker(namespace=atomrss.atom.ATOM_NAMESPACE)
+XHTMLE = lxml.builder.ElementMaker(namespace=atomrss.atom.XHTML_NAMESPACE)
 
 
 @pytest.fixture
@@ -248,6 +249,10 @@ class EntryAttributeTestCase:
     def element(self, simple_entry_tree):
         return simple_entry_tree.getroot()
 
+    @pytest.fixture
+    def qname(self):
+        return lxml.etree.QName(atomrss.atom.ATOM_NAMESPACE, self.element_name)
+
     def parse(self, tree):
         feed = atomrss.atom.parse_tree(tree)
         return feed.entries[0]
@@ -256,9 +261,8 @@ class EntryAttributeTestCase:
 class EntryRequiredAttributeTestCase(EntryAttributeTestCase):
     element_name = None
 
-    def test_missing(self, element, tree):
-        name = lxml.etree.QName(atomrss.atom.ATOM_NAMESPACE, self.element_name)
-        element.remove(element.find(name))
+    def test_missing(self, qname, element, tree):
+        element.remove(element.find(qname))
 
         feed = atomrss.atom.parse_tree(tree)
         assert feed.entries == []
@@ -280,9 +284,8 @@ class TestEntryAttributeTitle(EntryRequiredAttributeTestCase):
         assert entry.title.type == 'text'
         assert entry.title.value == entry_title
 
-    def test_html(self, element, tree):
-        name = lxml.etree.QName(atomrss.atom.ATOM_NAMESPACE, 'title')
-        element.remove(element.find(name))
+    def test_html(self, qname, element, tree):
+        element.remove(element.find(qname))
         element.append(
             ATOME('title', '&lt;&gt;', type='html')
         )
@@ -290,6 +293,20 @@ class TestEntryAttributeTitle(EntryRequiredAttributeTestCase):
         entry = self.parse(tree)
         assert entry.title.type == 'html'
         assert entry.title.value == '<>'
+
+    def test_xhtml(self, qname, element, tree):
+        element.remove(element.find(qname))
+        element.append(
+            ATOME.title(
+                XHTMLE.div(
+                    'Hello, ', XHTMLE.strong('World!')
+                ),
+                type='xhtml'
+            )
+        )
+
+        feed = atomrss.atom.parse_tree(tree)
+        assert feed.entries == []
 
 
 class TestEntryAttributeUpdated(EntryRequiredAttributeTestCase):
@@ -299,9 +316,8 @@ class TestEntryAttributeUpdated(EntryRequiredAttributeTestCase):
         entry = self.parse(tree)
         assert entry.updated.isoformat() == entry_updated
 
-    def test_invalid(self, element, tree):
-        name = lxml.etree.QName(atomrss.atom.ATOM_NAMESPACE, 'updated')
-        element.remove(element.find(name))
+    def test_invalid(self, qname, element, tree):
+        element.remove(element.find(qname))
         element.append(
             ATOME('updated',  'garbage')
         )
@@ -393,6 +409,17 @@ class TestEntryAttributeSummary(EntryAttributeTestCase):
         assert entry.summary.type == 'html'
         assert entry.summary.value == 'This is <em>AWESOME</em>!'
 
+    def test_xhtml(self, element, tree):
+        element.append(
+            ATOME.summary(
+                XHTMLE.p('The entry summary'),
+                type='xhtml'
+            )
+        )
+
+        entry = self.parse(tree)
+        assert entry.summary is None
+
 
 class TestEntryAttributeLinks(EntryAttributeTestCase):
     def test_missing(self, tree):
@@ -435,3 +462,14 @@ class TestEntryAttributeContent(EntryAttributeTestCase):
         entry = self.parse(tree)
         assert entry.content.type == 'html'
         assert entry.content.value == 'This is <strong>the content</strong>!'
+
+    def test_xhtml(self, element, tree):
+        element.append(
+            ATOME.content(
+                XHTMLE.h1('Hello, World!'),
+                type='xhtml'
+            )
+        )
+
+        entry = self.parse(tree)
+        assert entry.content is None
