@@ -10,6 +10,7 @@
     :copyright: 2016 by Daniel Neuhäuser
     :license: BSD, see LICENSE.rst for details
 """
+import html
 import logging
 import email.utils
 
@@ -204,6 +205,8 @@ class _Parser:
         title = self._get_element_text(element, 'title', default=None)
         link = self._get_element_text(element, 'link', default=None)
         description = self._get_element_text(element, 'description', default=None)
+        if description is not None:
+            description = html.unescape(description)
 
         if title is None and description is None:
             self.logger.error(

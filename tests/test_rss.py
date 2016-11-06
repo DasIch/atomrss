@@ -6,6 +6,7 @@
     :license: BSD, see LICENSE.rst for details
 """
 import pytest
+import lxml.etree
 from lxml.builder import E
 
 import atomrss.rss
@@ -167,13 +168,29 @@ class TestItemAttributeDescription(ItemAttributeTestCase):
         item = self.parse(tree)
         assert item.description is None
 
-    def test(self, element, tree):
+    def test_text(self, element, tree):
         element.append(
             E('description', 'Item description')
         )
 
         item = self.parse(tree)
         assert item.description == 'Item description'
+
+    def test_html(self, element, tree):
+        element.append(
+            E('description', 'Something &lt;em>happened&lt;/em>')
+        )
+
+        item = self.parse(tree)
+        assert item.description == 'Something <em>happened</em>'
+
+    def test_html_in_cdata(self, element, tree):
+        element.append(
+            E('description', lxml.etree.CDATA('Something <em>happened</em>'))
+        )
+
+        item = self.parse(tree)
+        assert item.description == 'Something <em>happened</em>'
 
 
 class TestItemAttributeAuthor(ItemAttributeTestCase):
