@@ -73,20 +73,42 @@ class ChannelAttributeTestCase:
     def tree(self, simple_feed_tree):
         return simple_feed_tree
 
+    @pytest.fixture
+    def element(self, simple_feed_tree):
+        return simple_feed_tree.find('channel')
 
-class TestChannelAttributeTitle(ChannelAttributeTestCase):
+
+class ChannelRequiredAttributeTestCase(ChannelAttributeTestCase):
+    element_name = None
+
+    def test_missing(self, element, tree):
+        element.remove(tree.find('channel/{}'.format(self.element_name)))
+
+        with pytest.raises(atomrss.rss.MissingElement) as exc:
+            atomrss.rss.parse_tree(tree)
+
+        exc.match('<{}>'.format(self.element_name))
+
+
+class TestChannelAttributeTitle(ChannelRequiredAttributeTestCase):
+    element_name = 'title'
+
     def test(self, feed_title, tree):
         feed = atomrss.rss.parse_tree(tree)
         assert feed.channel.title == feed_title
 
 
-class TestChannelAttributeLink(ChannelAttributeTestCase):
+class TestChannelAttributeLink(ChannelRequiredAttributeTestCase):
+    element_name = 'link'
+
     def test(self, feed_link, tree):
         feed = atomrss.rss.parse_tree(tree)
         assert feed.channel.link == feed_link
 
 
-class TestChannelAttributeDescription(ChannelAttributeTestCase):
+class TestChannelAttributeDescription(ChannelRequiredAttributeTestCase):
+    element_name = 'description'
+
     def test(self, feed_description, tree):
         feed = atomrss.rss.parse_tree(tree)
         assert feed.channel.description == feed_description
