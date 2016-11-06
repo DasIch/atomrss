@@ -189,3 +189,59 @@ class TestItemAttributeAuthor(ItemAttributeTestCase):
         item = self.parse(tree)
         assert item.author.name == 'Item Author'
         assert item.author.email == 'author@example.com'
+
+
+class TestItemAttributeEnclosure(ItemAttributeTestCase):
+    @pytest.fixture
+    def enclosure_url(self):
+        return 'http://example.com/podcast/episode01.mp3'
+
+    @pytest.fixture
+    def enclosure_type(self):
+        return 'audio/mpeg'
+
+    @pytest.fixture
+    def enclosure_length(self):
+        return 6182912
+
+    @pytest.fixture
+    def enclosure_element(self, enclosure_url, enclosure_type, enclosure_length):
+        return E.enclosure(
+            url=enclosure_url,
+            type=enclosure_type,
+            length=str(enclosure_length)
+        )
+
+    def test_missing(self, tree):
+        item = self.parse(tree)
+        assert item.enclosure is None
+
+    def test_missing_url(self, element, enclosure_element, tree):
+        del enclosure_element.attrib['url']
+        element.append(enclosure_element)
+
+        item = self.parse(tree)
+        assert item.enclosure is None
+
+    def test_missing_type(self, element, enclosure_element, tree):
+        del enclosure_element.attrib['type']
+        element.append(enclosure_element)
+
+        item = self.parse(tree)
+        assert item.enclosure is None
+
+    def test_missing_length(self, element, enclosure_element, tree):
+        del enclosure_element.attrib['length']
+        element.append(enclosure_element)
+
+        item = self.parse(tree)
+        assert item.enclosure is None
+
+    def test(self, element, enclosure_element, tree,
+             enclosure_url, enclosure_type, enclosure_length):
+        element.append(enclosure_element)
+
+        item = self.parse(tree)
+        assert item.enclosure.url == enclosure_url
+        assert item.enclosure.type == enclosure_type
+        assert item.enclosure.length == enclosure_length
