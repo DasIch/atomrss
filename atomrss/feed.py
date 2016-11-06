@@ -90,6 +90,14 @@ class Entry(metaclass=ABCMeta):
         """
         return _get_alternate_link(self.links)
 
+    @property
+    @abstractmethod
+    def content(self):
+        """
+        An optional :class:`Content` instance. This may be represent the entire
+        content, a link to the content or merely a summary of the content.
+        """
+
 
 class Text:
     def __init__(self, format, value):
@@ -98,6 +106,21 @@ class Text:
 
         #: The actual string.
         self.value = value
+
+
+class Content:
+    def __init__(self, format='html', value=None, source=None):
+        #: The format of the content, `text`, `html`, or, if `source` is
+        #: present, a mime type.
+        self.format = format
+
+        #: An optional string representing the actual content. This string will
+        #: be present iff :attr:`source` is not.
+        self.value = value
+
+        #: An optional URL to a website with the actual content. This URL will
+        #: be present iff :attr:`value` is not.
+        self.source = source
 
 
 class Link:
@@ -191,6 +214,20 @@ class AtomEntry(Entry):
             ) for link in self.entry.links
         ]
 
+    @property
+    def content(self):
+        if self.entry.content is not None:
+            return Content(
+                format=self.entry.content.type,
+                source=self.entry.content.src,
+                value=self.entry.content.value
+            )
+        elif self.entry.summary is not None:
+            return Content(
+                format=self.entry.summary.type,
+                value=self.entry.summary.value
+            )
+
 
 class RSSFeed(Feed):
     def __init__(self, feed):
@@ -237,3 +274,7 @@ class RSSEntry(Entry):
                 )
             )
         return links
+
+    @property
+    def content(self):
+        return Content(format='html', value=self.item.description)

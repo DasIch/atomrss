@@ -282,3 +282,92 @@ class TestEntryAttributeWebsite(EntryAttributeTestCase):
             rel='alternate',
             type='text/html'
         )
+
+
+class TestEntryAttributeContent(EntryAttributeTestCase):
+    def test_atom_no_content(self):
+        atom_entry = atom.Entry(
+            id=uuid.uuid4().urn,
+            title=atom.Text('text', 'Atom Entry Title'),
+            updated=datetime.datetime.utcnow()
+        )
+        entry = atomrss.feed.AtomEntry(atom_entry)
+        assert entry.content is None
+
+    def test_atom_summary_text(self):
+        atom_entry = atom.Entry(
+            id=uuid.uuid4().urn,
+            title=atom.Text('text', 'Atom Entry Title'),
+            updated=datetime.datetime.utcnow(),
+            summary=atom.Text('text', 'The summary of the entry.')
+        )
+        entry = atomrss.feed.AtomEntry(atom_entry)
+        assert entry.content.format == 'text'
+        assert entry.content.source is None
+        assert entry.content.value == 'The summary of the entry.'
+
+    def test_atom_summary_html(self):
+        atom_entry = atom.Entry(
+            id=uuid.uuid4().urn,
+            title=atom.Text('text', 'Atom Entry Title'),
+            updated=datetime.datetime.utcnow(),
+            summary=atom.Text('html', 'The summary of the entry.')
+        )
+        entry = atomrss.feed.AtomEntry(atom_entry)
+        assert entry.content.format == 'html'
+        assert entry.content.source is None
+        assert entry.content.value == 'The summary of the entry.'
+
+    def test_atom_content_embedded_text(self):
+        atom_entry = atom.Entry(
+            id=uuid.uuid4().urn,
+            title=atom.Text('text', 'Atom Entry Title'),
+            updated=datetime.datetime.utcnow(),
+            content=atom.Content(
+                'text', None, 'The content of the Atom entry.'
+            )
+        )
+        entry = atomrss.feed.AtomEntry(atom_entry)
+        assert entry.content.format == 'text'
+        assert entry.content.source is None
+        assert entry.content.value == 'The content of the Atom entry.'
+
+    def test_atom_content_embedded_html(self):
+        atom_entry = atom.Entry(
+            id=uuid.uuid4().urn,
+            title=atom.Text('text', 'Atom Entry Title'),
+            updated=datetime.datetime.utcnow(),
+            content=atom.Content(
+                'html', None, 'The content of the Atom entry.'
+            )
+        )
+        entry = atomrss.feed.AtomEntry(atom_entry)
+        assert entry.content.format == 'html'
+        assert entry.content.source is None
+        assert entry.content.value == 'The content of the Atom entry.'
+
+    def test_atom_content_src(self):
+        atom_entry = atom.Entry(
+            id=uuid.uuid4().urn,
+            title=atom.Text('text', 'Atom Entry Title'),
+            updated=datetime.datetime.utcnow(),
+            content=atom.Content(
+                'text/html', 'http://example.com', None
+            )
+        )
+        entry = atomrss.feed.AtomEntry(atom_entry)
+        assert entry.content.format == 'text/html'
+        assert entry.content.source == 'http://example.com'
+        assert entry.content.value is None
+
+    def test_rss(self):
+        rss_item = rss.Item(
+            title='RSS Item Title',
+            description=(
+                'The content of this RSS Item.'
+            )
+        )
+        entry = atomrss.feed.RSSEntry(rss_item)
+        assert entry.content.format == 'html'
+        assert entry.content.source is None
+        assert entry.content.value == 'The content of this RSS Item.'
