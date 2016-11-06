@@ -23,13 +23,17 @@ class NotAFeed(AtomRSSError):
 
 def parse(source):
     tree = lxml.etree.parse(source)
+    return parse_tree(tree)
+
+
+def parse_tree(tree):
     try:
         return AtomFeed(atom.parse_tree(tree))
     except atom.InvalidRoot:
         try:
             return RSSFeed(rss.parse_tree(tree))
         except rss.InvalidRoot:
-            raise NotAFeed(source)
+            raise NotAFeed(tree.docinfo.URL or tree)
 
 
 class Feed(metaclass=ABCMeta):
@@ -37,7 +41,7 @@ class Feed(metaclass=ABCMeta):
     @abstractmethod
     def title(self):
         """
-        The title of the feed.
+        The title of the feed as :class:`Text` instance.
         """
 
     @property
@@ -87,6 +91,15 @@ class Entry(metaclass=ABCMeta):
         return _get_alternate_link(self.links)
 
 
+class Text:
+    def __init__(self, format, value):
+        #: The text format either `text` or `html`.
+        self.format = format
+
+        #: The actual string.
+        self.value = value
+
+
 class Link:
     def __init__(self, href, rel='alternate', type=None, hreflang=None,
                  title=None, length=None):
@@ -110,6 +123,18 @@ class Link:
         #: An optional indication of the linked content's length in bytes.
         self.length = length
 
+    def __eq__(self, other):
+        if isinstance(other, Link):
+            return (
+                self.href == other.href and
+                self.rel == other.rel and
+                self.type == other.type and
+                self.hreflang == other.hreflang and
+                self.title == other.title and
+                self.length == other.length
+            )
+        return NotImplemented
+
 
 def _get_alternate_link(links):
     alternates = [
@@ -131,7 +156,7 @@ class AtomFeed(Feed):
 
     @property
     def title(self):
-        self.feed.title
+        return Text(self.feed.title.type, self.feed.title.value)
 
     @property
     def links(self):
@@ -154,7 +179,7 @@ class AtomEntry(Entry):
 
     @property
     def title(self):
-        return self.entry.title
+        return Text(self.entry.title.type, self.entry.title.value)
 
     @property
     def links(self):
@@ -163,7 +188,7 @@ class AtomEntry(Entry):
                 link.href, rel=link.rel, type=link.type,
                 hreflang=link.hreflang,
                 title=link.title, length=link.length
-            ) for link in self.feed.links
+            ) for link in self.entry.links
         ]
 
 
@@ -173,7 +198,7 @@ class RSSFeed(Feed):
 
     @property
     def title(self):
-        return self.feed.channel.title
+        return Text('text', self.feed.channel.title)
 
     @property
     def links(self):
@@ -192,7 +217,8 @@ class RSSEntry(Entry):
 
     @property
     def title(self):
-        return self.item.title
+        if self.item.title is not None:
+            return Text('text', self.item.title)
 
     @property
     def links(self):
