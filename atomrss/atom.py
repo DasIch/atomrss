@@ -136,8 +136,8 @@ class InvalidRoot(MissingElement):
 
 
 class InvalidDate(AtomParserError):
-    def __init__(self, date):
-        super().__init__(date)
+    def __init__(self, date, lineno=None):
+        super().__init__(date, lineno=lineno)
         self.date = date
 
     def to_log_kwargs(self):

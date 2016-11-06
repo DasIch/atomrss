@@ -131,6 +131,18 @@ class TestFeedAttributeUpdated(FeedRequiredAttributeTestCase):
         feed = atomrss.atom.parse_tree(tree)
         assert feed.updated.isoformat() == feed_updated
 
+    def test_invalid(self, element, tree):
+        name = lxml.etree.QName(atomrss.atom.ATOM_NAMESPACE, 'updated')
+        element.remove(element.find(name))
+        element.append(
+            ATOME('updated', 'garbage')
+        )
+
+        with pytest.raises(atomrss.atom.InvalidDate) as exc:
+            atomrss.atom.parse_tree(tree)
+
+        exc.match('garbage')
+
 
 class TestFeedAttributeSubtitle(FeedAttributeTestCase):
     def test_missing(self, tree):
@@ -255,6 +267,16 @@ class TestEntryAttributeUpdated(EntryRequiredAttributeTestCase):
         entry = self.parse(tree)
         assert entry.updated.isoformat() == entry_updated
 
+    def test_invalid(self, element, tree):
+        name = lxml.etree.QName(atomrss.atom.ATOM_NAMESPACE, 'updated')
+        element.remove(element.find(name))
+        element.append(
+            ATOME('updated',  'garbage')
+        )
+
+        feed = atomrss.atom.parse_tree(tree)
+        assert feed.entries == []
+
 
 class TestEntryAttributeAuthors(EntryAttributeTestCase):
     def test_missing(self, tree):
@@ -295,6 +317,14 @@ class TestEntryAttributeContributors(EntryAttributeTestCase):
 
 class TestEntryAttributePublished(EntryAttributeTestCase):
     def test_missing(self, tree):
+        entry = self.parse(tree)
+        assert entry.published is None
+
+    def test_invalid(self, element, tree):
+        element.append(
+            ATOME('published', 'garbage')
+        )
+
         entry = self.parse(tree)
         assert entry.published is None
 
