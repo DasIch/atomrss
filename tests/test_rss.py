@@ -237,6 +237,18 @@ class TestItemAttributeEnclosure(ItemAttributeTestCase):
         item = self.parse(tree)
         assert item.enclosure is None
 
+    def test_negative_length(self, enclosure_element, tree):
+        enclosure_element.attrib['length'] = '-1'
+
+        item = self.parse(tree)
+        assert item.enclosure is None
+
+    def test_invalid_length(self, enclosure_element, tree):
+        enclosure_element.attrib['length'] = 'garbage'
+
+        item = self.parse(tree)
+        assert item.enclosure is None
+
     def test(self, element, enclosure_element, tree,
              enclosure_url, enclosure_type, enclosure_length):
         element.append(enclosure_element)
