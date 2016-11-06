@@ -220,20 +220,37 @@ class EntryAttributeTestCase:
         return feed.entries[0]
 
 
-class TestEntryAttributeID(EntryAttributeTestCase):
+class EntryRequiredAttributeTestCase(EntryAttributeTestCase):
+    element_name = None
+
+    def test_missing(self, element, tree):
+        name = lxml.etree.QName(atomrss.atom.ATOM_NAMESPACE, self.element_name)
+        element.remove(element.find(name))
+
+        feed = atomrss.atom.parse_tree(tree)
+        assert feed.entries == []
+
+
+class TestEntryAttributeID(EntryRequiredAttributeTestCase):
+    element_name = 'id'
+
     def test(self, entry_id, tree):
         entry = self.parse(tree)
         assert entry.id == entry_id
 
 
-class TestEntryAttributeTitle(EntryAttributeTestCase):
+class TestEntryAttributeTitle(EntryRequiredAttributeTestCase):
+    element_name = 'title'
+
     def test(self, entry_title, tree):
         entry = self.parse(tree)
         assert entry.title.type == 'text'
         assert entry.title.value == entry_title
 
 
-class TestEntryAttributeUpdated(EntryAttributeTestCase):
+class TestEntryAttributeUpdated(EntryRequiredAttributeTestCase):
+    element_name = 'updated'
+
     def test(self, entry_updated, tree):
         entry = self.parse(tree)
         assert entry.updated.isoformat() == entry_updated
