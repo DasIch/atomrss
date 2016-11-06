@@ -72,7 +72,7 @@ class Entry(metaclass=ABCMeta):
     @abstractmethod
     def title(self):
         """
-        An optional title.
+        An optional title as a :class:`Text` instance.
         """
 
     @property
