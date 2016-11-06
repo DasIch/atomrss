@@ -67,62 +67,83 @@ def test_popular_feed_parseable(popular_feed_example):
         pytest.skip('requires an RSS feed: {}'.format(err))
 
 
-class TestChannel:
-    def test_feed_title(self, feed_title, simple_feed_tree):
-        feed = atomrss.rss.parse_tree(simple_feed_tree)
+class ChannelAttributeTestCase:
+    # Alias
+    @pytest.fixture
+    def tree(self, simple_feed_tree):
+        return simple_feed_tree
+
+
+class TestChannelAttributeTitle(ChannelAttributeTestCase):
+    def test(self, feed_title, tree):
+        feed = atomrss.rss.parse_tree(tree)
         assert feed.channel.title == feed_title
 
-    def test_feed_link(self, feed_link, simple_feed_tree):
-        feed = atomrss.rss.parse_tree(simple_feed_tree)
+
+class TestChannelAttributeLink(ChannelAttributeTestCase):
+    def test(self, feed_link, tree):
+        feed = atomrss.rss.parse_tree(tree)
         assert feed.channel.link == feed_link
 
-    def test_feed_description(self, feed_description, simple_feed_tree):
-        feed = atomrss.rss.parse_tree(simple_feed_tree)
+
+class TestChannelAttributeDescription(ChannelAttributeTestCase):
+    def test(self, feed_description, tree):
+        feed = atomrss.rss.parse_tree(tree)
         assert feed.channel.description == feed_description
 
 
-class TestItem:
+class ItemAttributeTestCase:
     @pytest.fixture
-    def feed_tree(self, simple_item_tree, simple_feed_tree):
+    def tree(self, simple_feed_tree, simple_item_tree):
         channel = simple_feed_tree.find('channel')
         channel.append(simple_item_tree.getroot())
         return simple_feed_tree
 
-    def test_title(self, item_title, feed_tree):
-        feed = atomrss.rss.parse_tree(feed_tree)
-        item = feed.channel.items[0]
+    @pytest.fixture
+    def element(self, tree):
+        return tree.find('channel/item')
+
+    def parse(self, tree):
+        feed = atomrss.rss.parse_tree(tree)
+        return feed.channel.items[0]
+
+
+class TestItemAttributeTitle(ItemAttributeTestCase):
+    def test(self, item_title, tree):
+        item = self.parse(tree)
         assert item.title == item_title
 
-    def test_link(self, item_link, feed_tree):
-        feed = atomrss.rss.parse_tree(feed_tree)
-        item = feed.channel.items[0]
+
+class TestItemAttributeLink(ItemAttributeTestCase):
+    def test(self, item_link, tree):
+        item = self.parse(tree)
         assert item.link == item_link
 
-    def test_description_without_item_description(self, feed_tree):
-        feed = atomrss.rss.parse_tree(feed_tree)
-        item = feed.channel.items[0]
+
+class TestItemAttributeDescription(ItemAttributeTestCase):
+    def test_missing(self, tree):
+        item = self.parse(tree)
         assert item.description is None
 
-    def test_description(self, feed_tree):
-        feed_tree.find('channel/item').append(
+    def test(self, element, tree):
+        element.append(
             E('description', 'Item description')
         )
 
-        feed = atomrss.rss.parse_tree(feed_tree)
-        item = feed.channel.items[0]
+        item = self.parse(tree)
         assert item.description == 'Item description'
 
-    def test_author_without_item_author(self, feed_tree):
-        feed = atomrss.rss.parse_tree(feed_tree)
-        item = feed.channel.items[0]
+
+class TestItemAttributeAuthor(ItemAttributeTestCase):
+    def test_missing(self, tree):
+        item = self.parse(tree)
         assert item.author is None
 
-    def test_author(self, feed_tree):
-        feed_tree.find('channel/item').append(
+    def test(self, element, tree):
+        element.append(
             E('author', 'author@example.com (Item Author)')
         )
 
-        feed = atomrss.rss.parse_tree(feed_tree)
-        item = feed.channel.items[0]
+        item = self.parse(tree)
         assert item.author.name == 'Item Author'
         assert item.author.email == 'author@example.com'
