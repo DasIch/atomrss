@@ -11,6 +11,8 @@ from lxml.builder import E
 
 import atomrss.rss
 
+from tests.utils import RecordingLogger, wrap_recording_logger
+
 
 @pytest.fixture
 def feed_title():
@@ -126,8 +128,8 @@ class ItemAttributeTestCase:
     def element(self, tree):
         return tree.find('channel/item')
 
-    def parse(self, tree):
-        feed = atomrss.rss.parse_tree(tree)
+    def parse(self, tree, logger=None):
+        feed = atomrss.rss.parse_tree(tree, logger=logger)
         return feed.channel.items[0]
 
 
@@ -136,8 +138,17 @@ class TestItemAttributeTitle(ItemAttributeTestCase):
         element.remove(element.find('title'))
         assert element.find('description') is None
 
-        feed = atomrss.rss.parse_tree(tree)
+        logger = RecordingLogger()
+        feed = atomrss.rss.parse_tree(tree, wrap_recording_logger(logger))
         assert feed.channel.items == []
+        assert logger.messages == [{
+            'event': 'invalid-item',
+            'cause': 'missing-element',
+            'element': '<title> or <description>',
+            'rss_version': '2.0',
+            'source': None,
+            'lineno': None
+        }]
 
     def test_replaced_by_description(self, element, tree):
         element.remove(element.find('title'))
@@ -158,6 +169,12 @@ class TestItemAttributeLink(ItemAttributeTestCase):
     def test(self, item_link, tree):
         item = self.parse(tree)
         assert item.link == item_link
+
+    def test_missing(self, element, tree):
+        element.remove(element.find('link'))
+
+        entry = self.parse(tree)
+        assert entry.link is None
 
 
 class TestItemAttributeDescription(ItemAttributeTestCase):
@@ -237,34 +254,82 @@ class TestItemAttributeEnclosure(ItemAttributeTestCase):
         del enclosure_element.attrib['url']
         element.append(enclosure_element)
 
-        item = self.parse(tree)
+        logger = RecordingLogger()
+        item = self.parse(tree, logger=wrap_recording_logger(logger))
         assert item.enclosure is None
+        assert logger.messages == [{
+            'event': 'invalid-enclosure',
+            'cause': 'missing-attribute',
+            'attribute': 'url',
+            'rss_version': '2.0',
+            'lineno': None,
+            'source': None
+
+        }]
 
     def test_missing_type(self, element, enclosure_element, tree):
         del enclosure_element.attrib['type']
         element.append(enclosure_element)
 
-        item = self.parse(tree)
+        logger = RecordingLogger()
+        item = self.parse(tree, logger=wrap_recording_logger(logger))
         assert item.enclosure is None
+        assert logger.messages == [{
+            'event': 'invalid-enclosure',
+            'cause': 'missing-attribute',
+            'attribute': 'type',
+            'rss_version': '2.0',
+            'lineno': None,
+            'source': None
+        }]
 
     def test_missing_length(self, element, enclosure_element, tree):
         del enclosure_element.attrib['length']
         element.append(enclosure_element)
 
-        item = self.parse(tree)
+        logger = RecordingLogger()
+        item = self.parse(tree, logger=wrap_recording_logger(logger))
         assert item.enclosure is None
+        assert logger.messages == [{
+            'event': 'invalid-enclosure',
+            'cause': 'missing-attribute',
+            'attribute': 'length',
+            'rss_version': '2.0',
+            'lineno': None,
+            'source': None
+        }]
 
-    def test_negative_length(self, enclosure_element, tree):
+    def test_negative_length(self, element, enclosure_element, tree):
         enclosure_element.attrib['length'] = '-1'
+        element.append(enclosure_element)
 
-        item = self.parse(tree)
+        logger = RecordingLogger()
+        item = self.parse(tree, logger=wrap_recording_logger(logger))
         assert item.enclosure is None
+        assert logger.messages == [{
+            'event': 'invalid-enclosure',
+            'cause': 'invalid-length',
+            'length': '-1',
+            'rss_version': '2.0',
+            'lineno': None,
+            'source': None
+        }]
 
-    def test_invalid_length(self, enclosure_element, tree):
+    def test_invalid_length(self, element, enclosure_element, tree):
         enclosure_element.attrib['length'] = 'garbage'
+        element.append(enclosure_element)
 
-        item = self.parse(tree)
+        logger = RecordingLogger()
+        item = self.parse(tree, logger=wrap_recording_logger(logger))
         assert item.enclosure is None
+        assert logger.messages == [{
+            'event': 'invalid-enclosure',
+            'cause': 'invalid-length',
+            'length': 'garbage',
+            'rss_version': '2.0',
+            'lineno': None,
+            'source': None
+        }]
 
     def test(self, element, enclosure_element, tree,
              enclosure_url, enclosure_type, enclosure_length):

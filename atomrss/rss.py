@@ -25,7 +25,7 @@ from atomrss.exceptions import ParserError
 SUPPORTED_VERSIONS = {'2.0', '0.92', '0.91'}
 
 
-logger = structlog.get_logger(
+DEFAULT_LOGGER = structlog.wrap_logger(
     logging.getLogger('atomrss.rss'),
     wrapper_class=structlog.stdlib.BoundLogger
 )
@@ -129,20 +129,22 @@ class VersionNotSupported(RSSParserError):
     pass
 
 
-def parse(source, parser=None):
+def parse(source, parser=None, logger=None):
     tree = lxml.etree.parse(source, parser=parser)
-    return parse_tree(tree)
+    return parse_tree(tree, logger=logger)
 
 
-def parse_tree(tree):
-    parser = _Parser(tree)
+def parse_tree(tree, logger=None):
+    parser = _Parser(tree, logger=logger)
     return parser.parse()
 
 
 class _Parser:
-    def __init__(self, tree):
+    def __init__(self, tree, logger=None):
         self.tree = tree
 
+        if logger is None:
+            logger = DEFAULT_LOGGER
         self.logger = logger.bind(source=self.tree.docinfo.URL)
 
     def parse(self):
@@ -211,7 +213,8 @@ class _Parser:
         if title is None and description is None:
             self.logger.error(
                 'invalid-item',
-                cause='element-missing',
+                cause='missing-element',
+                element='<title> or <description>',
                 lineno=element.sourceline
             )
             return
@@ -274,6 +277,7 @@ class _Parser:
                 length=raw_length,
                 lineno=element.sourceline
             )
+            return
 
         return Enclosure(url, length, type)
 
