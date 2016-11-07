@@ -21,8 +21,8 @@ ATOM_NAMESPACE = 'http://www.w3.org/2005/atom'
 XHTML_NAMESPACE = 'http://www.w3.org/1999/xhtml'
 
 
-logger = structlog.wrap_logger(
-    logging.getLogger('atomrss.atom'),
+DEFAULT_LOGGER = structlog.wrap_logger(
+    logging.getLogger(__name__),
     wrapper_class=structlog.stdlib.BoundLogger
 )
 
@@ -158,19 +158,21 @@ class InvalidDate(AtomParserError):
         }
 
 
-def parse(source):
+def parse(source, logger=None):
     tree = lxml.etree.parse(source)
-    return parse_tree(tree)
+    return parse_tree(tree, logger=logger)
 
 
-def parse_tree(tree):
-    return _Parser(tree).parse()
+def parse_tree(tree, logger=None):
+    return _Parser(tree, logger=logger).parse()
 
 
 class _Parser:
-    def __init__(self, tree):
+    def __init__(self, tree, logger=None):
         self.tree = tree
 
+        if logger is None:
+            logger = DEFAULT_LOGGER
         self.logger = logger.bind(source=self.tree.docinfo.URL)
         self.namespace = ATOM_NAMESPACE
 

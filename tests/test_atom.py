@@ -14,6 +14,8 @@ import lxml.builder
 
 import atomrss.atom
 
+from tests.utils import RecordingLogger, wrap_recording_logger
+
 
 ATOME = lxml.builder.ElementMaker(namespace=atomrss.atom.ATOM_NAMESPACE)
 XHTMLE = lxml.builder.ElementMaker(namespace=atomrss.atom.XHTML_NAMESPACE)
@@ -253,8 +255,8 @@ class EntryAttributeTestCase:
     def qname(self):
         return lxml.etree.QName(atomrss.atom.ATOM_NAMESPACE, self.element_name)
 
-    def parse(self, tree):
-        feed = atomrss.atom.parse_tree(tree)
+    def parse(self, tree, logger=None):
+        feed = atomrss.atom.parse_tree(tree, logger=logger)
         return feed.entries[0]
 
 
@@ -264,8 +266,19 @@ class EntryRequiredAttributeTestCase(EntryAttributeTestCase):
     def test_missing(self, qname, element, tree):
         element.remove(element.find(qname))
 
-        feed = atomrss.atom.parse_tree(tree)
+        logger = RecordingLogger()
+        feed = atomrss.atom.parse_tree(
+            tree,
+            wrap_recording_logger(logger)
+        )
         assert feed.entries == []
+        assert logger.messages == [{
+            'event': 'invalid-entry',
+            'cause': 'missing-element',
+            'element': '<atom:{}>'.format(self.element_name),
+            'source': None,
+            'lineno': None
+        }]
 
 
 class TestEntryAttributeID(EntryRequiredAttributeTestCase):
@@ -322,8 +335,16 @@ class TestEntryAttributeUpdated(EntryRequiredAttributeTestCase):
             ATOME('updated',  'garbage')
         )
 
-        feed = atomrss.atom.parse_tree(tree)
+        logger = RecordingLogger()
+        feed = atomrss.atom.parse_tree(tree, wrap_recording_logger(logger))
         assert feed.entries == []
+        assert logger.messages == [{
+            'event': 'invalid-entry',
+            'cause': 'invalid-date',
+            'date': 'garbage',
+            'lineno': None,
+            'source': None
+        }]
 
 
 class TestEntryAttributeAuthors(EntryAttributeTestCase):
@@ -373,8 +394,16 @@ class TestEntryAttributePublished(EntryAttributeTestCase):
             ATOME('published', 'garbage')
         )
 
-        entry = self.parse(tree)
+        logger = RecordingLogger()
+        entry = self.parse(tree, wrap_recording_logger(logger))
         assert entry.published is None
+        assert logger.messages == [{
+            'event': 'invalid-published',
+            'cause': 'invalid-date',
+            'date': 'garbage',
+            'source': None,
+            'lineno': None
+        }]
 
     def test(self, element, tree):
         published = datetime.datetime.utcnow().isoformat()
